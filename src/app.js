@@ -81,6 +81,7 @@ const social = require('./social');
 app.locals.socialProviders = social.socialProviders;
 app.use(social.router);
 app.use(require('./routes/posts'));
+app.use(require('./routes/comments'));
 
 app.get('/', (req, res) => {
   res.render('index');

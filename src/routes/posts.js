@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { getBoard, canWrite, canRead, canManage, canPin } = require('../boards');
+const { getBoard, isApproved, canWrite, canRead, canManage, canPin } = require('../boards');
 const { requireLogin, httpError } = require('../middleware/auth');
 
 const router = express.Router();
@@ -127,9 +127,21 @@ router.get('/boards/:board/:id', loadBoard, loadPost, (req, res, next) => {
     post.views += 1;
   }
 
+  const comments = db.prepare(`
+    SELECT c.*, u.nickname AS author, u.role AS author_role
+    FROM comments c JOIN users u ON u.id = c.user_id
+    WHERE c.post_id = ? ORDER BY c.id
+  `).all(post.id);
+  const likeCount = db.prepare('SELECT COUNT(*) AS n FROM likes WHERE post_id = ?').get(post.id).n;
+  const liked = !!(req.user && db.prepare('SELECT 1 FROM likes WHERE post_id = ? AND user_id = ?').get(post.id, req.user.id));
+
   res.render('board/view', {
     pageTitle: post.title,
     post,
+    comments,
+    likeCount,
+    liked,
+    canInteract: isApproved(req.user),
     canManage: canManage(req.user, post),
   });
 });

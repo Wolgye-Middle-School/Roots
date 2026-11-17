@@ -14,7 +14,48 @@
     </div>
   </header>
   <div class="post-content"><%= post.content %></div>
+  <div class="like-box" id="likes">
+    <% if (canInteract) { %>
+      <form method="post" action="/boards/<%= board.slug %>/<%= post.id %>/like" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="like-btn<%= liked ? ' liked' : '' %>"><%= liked ? '💚' : '🤍' %> 공감 <%= likeCount %></button>
+      </form>
+    <% } else { %>
+      <span class="like-btn disabled">🤍 공감 <%= likeCount %></span>
+    <% } %>
+  </div>
 </article>
+
+<section class="card" id="comments">
+  <h2 class="comments-title">댓글 <%= comments.length %></h2>
+  <% if (!comments.length) { %><p class="muted">첫 댓글을 남겨 주세요.</p><% } %>
+  <ul class="comment-list">
+    <% comments.forEach(function (c) { %>
+      <li class="comment">
+        <div class="comment-meta">
+          <strong><%= c.author %></strong> <small class="role role-<%= c.author_role %>"><%= roleLabel(c.author_role) %></small>
+          <span class="muted"><%= formatDate(c.created_at, true) %></span>
+          <% if (user && (user.id === c.user_id || user.role === 'admin')) { %>
+            <form method="post" action="/boards/<%= board.slug %>/<%= post.id %>/comments/<%= c.id %>/delete" class="inline-form" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="link-button small">삭제</button>
+            </form>
+          <% } %>
+        </div>
+        <div class="comment-content"><%= c.content %></div>
+      </li>
+    <% }) %>
+  </ul>
+  <% if (canInteract) { %>
+    <form method="post" action="/boards/<%= board.slug %>/<%= post.id %>/comments" class="comment-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <textarea name="content" maxlength="1000" required placeholder="따뜻한 공감과 응원의 댓글을 남겨 주세요."></textarea>
+      <button type="submit" class="btn">댓글 등록</button>
+    </form>
+  <% } else { %>
+    <p class="muted">댓글은 가입 승인된 회원만 작성할 수 있습니다.</p>
+  <% } %>
+</section>
 
 <div class="post-actions">
   <a class="btn btn-outline" href="/boards/<%= board.slug %>">목록</a>

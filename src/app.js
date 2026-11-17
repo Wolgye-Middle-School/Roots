@@ -85,9 +85,7 @@ app.use(require('./routes/comments'));
 app.use(require('./routes/account'));
 app.use(require('./routes/admin'));
 
-app.get('/', (req, res) => {
-  res.render('index');
-});
+app.use(require('./routes/home'));
 
 app.use((req, res) => {
   res.status(404).render('error', { title: '페이지를 찾을 수 없습니다', message: '요청하신 페이지가 존재하지 않습니다.' });

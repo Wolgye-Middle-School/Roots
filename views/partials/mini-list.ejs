@@ -1,0 +1,19 @@
+<% if (!items.length) { %>
+  <p class="muted"><%= emptyText %></p>
+<% } else { %>
+  <ul class="mini-list">
+    <% items.forEach(function (p) { %>
+      <li>
+        <% if (showBoard) { %><span class="mini-board"><%= p.boardName %></span><% } %>
+        <% if (p.pinned && !showBoard) { %><span class="badge badge-pin">공지</span><% } %>
+        <% if (p.readable) { %>
+          <a href="/boards/<%= p.board %>/<%= p.id %>"><%= p.title %></a>
+          <% if (p.comment_count) { %><span class="comment-count">[<%= p.comment_count %>]</span><% } %>
+        <% } else { %>
+          <span class="muted">🔒 회원 전용 게시글</span>
+        <% } %>
+        <span class="mini-date"><%= formatDate(p.created_at) %></span>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>

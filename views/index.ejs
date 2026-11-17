@@ -1,6 +1,53 @@
 <%- include('partials/header', { pageTitle: '홈' }) %>
 <section class="hero">
-  <h1>느티나무 게시판</h1>
+  <h1>🌳 느티나무 게시판</h1>
   <p>특수학급 교사와 학부모가 아이들의 학습 현황과 활동을 나누고, 서로 공감하며 함께 성장하는 공간입니다.</p>
+  <% if (!user) { %>
+    <div class="hero-actions">
+      <a class="btn" href="/signup">회원가입</a>
+      <a class="btn btn-outline" href="/login">로그인</a>
+    </div>
+  <% } else if (user.status === 'pending') { %>
+    <p class="hero-note">가입 승인 대기 중입니다. 관리자 승인 후 회원 전용 게시글을 보고 글과 댓글을 작성할 수 있습니다.</p>
+  <% } %>
+</section>
+
+<div class="home-grid">
+  <section class="card intro-card">
+    <div class="section-head">
+      <h2>느티나무반 소개</h2>
+      <a href="/boards/intro">더보기</a>
+    </div>
+    <% if (intro) { %>
+      <h3><a href="/boards/intro/<%= intro.id %>"><%= intro.title %></a></h3>
+      <p class="excerpt"><%= intro.excerpt %><%= intro.content.length > intro.excerpt.length ? '…' : '' %></p>
+    <% } else { %>
+      <p class="excerpt">느티나무반은 월계중학교 특수학급입니다. 아이 한 명 한 명의 속도에 맞춘 교육으로, 느티나무처럼 깊게 뿌리내리고 넓게 자라도록 함께합니다.</p>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h2>공지사항</h2>
+      <a href="/boards/notice">더보기</a>
+    </div>
+    <%- include('partials/mini-list', { items: notices, showBoard: false, emptyText: '등록된 공지사항이 없습니다.' }) %>
+  </section>
+
+  <section class="card latest-card">
+    <div class="section-head">
+      <h2>최신글</h2>
+    </div>
+    <%- include('partials/mini-list', { items: latest, showBoard: true, emptyText: '아직 등록된 글이 없습니다. 첫 글을 남겨 주세요!' }) %>
+  </section>
+</div>
+
+<section class="board-cards">
+  <% boardsWithDesc.forEach(function (b) { %>
+    <a class="board-card" href="/boards/<%= b.slug %>">
+      <strong><%= b.name %></strong>
+      <span><%= b.description %></span>
+    </a>
+  <% }) %>
 </section>
 <%- include('partials/footer') %>

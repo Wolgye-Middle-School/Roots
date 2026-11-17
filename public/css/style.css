@@ -90,3 +90,13 @@ textarea { min-height: 260px; resize: vertical; }
   .main-nav { order: 3; flex-basis: 100%; gap: 12px; }
   .card { padding: 18px; }
 }
+
+/* Auth */
+.divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: .85rem; margin: 20px 0 14px; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.social-buttons { display: grid; gap: 8px; margin-bottom: 16px; }
+.social-btn { display: block; text-align: center; padding: 10px; border-radius: 8px; font-weight: 600; border: 1px solid var(--border); color: var(--text); }
+.social-btn:hover { text-decoration: none; filter: brightness(.97); }
+.social-kakao { background: #fee500; border-color: #fee500; color: #191919; }
+.social-naver { background: #03c75a; border-color: #03c75a; color: #fff; }
+.social-google { background: #fff; color: #1f1f1f; }

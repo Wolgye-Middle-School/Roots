@@ -3,7 +3,7 @@
 <section class="card">
   <h1><%= pageTitle %></h1>
   <% if (error) { %><div class="flash flash-error"><%= error %></div><% } %>
-  <form method="post" action="<%= action %>">
+  <form method="post" action="<%= action %>" enctype="multipart/form-data">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="field">
       <label for="title">제목</label>
@@ -12,6 +12,24 @@
     <div class="field">
       <label for="content">내용</label>
       <textarea id="content" name="content" maxlength="20000" required><%= form.content || '' %></textarea>
+    </div>
+    <div class="field">
+      <label for="images">사진 첨부 <span class="muted">(최대 <%= maxFiles %>장, 한 장당 5MB · JPG/PNG/GIF/WEBP)</span></label>
+      <% if (attachments.length) { %>
+        <div class="thumb-grid">
+          <% attachments.forEach(function (a) { %>
+            <label class="thumb">
+              <img src="/files/<%= a.id %>" alt="<%= a.original_name %>">
+              <span><input type="checkbox" name="removeImages" value="<%= a.id %>"> 삭제</span>
+            </label>
+          <% }) %>
+        </div>
+      <% } %>
+      <input type="file" id="images" name="images" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+      <div class="notice-box">
+        학생의 얼굴 등 개인을 알아볼 수 있는 사진은 <strong>보호자의 동의를 받은 경우에만</strong> 올려 주세요.
+        <label class="consent"><input type="checkbox" name="photoConsent" value="1" <%= form.photoConsent ? 'checked' : '' %>> 사진 속 학생의 보호자에게 게시 동의를 받았습니다. (사진 첨부 시 필수)</label>
+      </div>
     </div>
     <div class="field">
       <label>공개 범위</label>

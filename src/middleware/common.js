@@ -33,9 +33,12 @@ function csrfError() {
 
 // 상태 변경 요청(POST)의 CSRF 토큰 검증.
 // multipart 요청은 본문이 아직 파싱되지 않았으므로 업로드 처리 후 verifyCsrf로 검증한다.
+// 업로드를 받는 경로(글쓰기, 글수정)만 multipart 예외를 허용
+const MULTIPART_ROUTES = /^\/boards\/[a-z]+(\/\d+\/edit)?$/;
+
 function csrfProtect(req, res, next) {
   if (req.method !== 'POST') return next();
-  if (req.is('multipart/form-data')) return next();
+  if (req.is('multipart/form-data') && MULTIPART_ROUTES.test(req.path)) return next();
   if (checkCsrf(req)) return next();
   next(csrfError());
 }
@@ -45,4 +48,4 @@ function verifyCsrf(req, res, next) {
   next(csrfError());
 }
 
-module.exports = { flash, csrfToken, csrfProtect, verifyCsrf };
+module.exports = { flash, csrfToken, csrfProtect, verifyCsrf, checkCsrf, csrfError };

@@ -1,7 +1,9 @@
+const path = require('path');
 const express = require('express');
 const db = require('../db');
 const { getBoard, isApproved, canWrite, canRead, canManage, canPin } = require('../boards');
 const { requireLogin, httpError } = require('../middleware/auth');
+const { upload, removeFiles, UPLOAD_DIR, MAX_FILES } = require('../uploads');
 
 const router = express.Router();
 const PAGE_SIZE = 15;
@@ -11,6 +13,8 @@ const getPost = db.prepare(`
   FROM posts p JOIN users u ON u.id = p.user_id
   WHERE p.id = ?
 `);
+const getAttachments = db.prepare('SELECT * FROM attachments WHERE post_id = ? ORDER BY id');
+const insertAttachment = db.prepare('INSERT INTO attachments (post_id, filename, original_name, mime) VALUES (?, ?, ?, ?)');
 
 function loadBoard(req, res, next) {
   const board = getBoard(req.params.board);
@@ -46,15 +50,34 @@ function readForm(req) {
     content: String(req.body.content || '').trim(),
     visibility: req.body.visibility === 'public' ? 'public' : 'members',
     pinned: canPin(req.user) && req.body.pinned ? 1 : 0,
+    photoConsent: !!req.body.photoConsent,
   };
 }
 
-function validate(form) {
+function validate(form, newFiles, totalImages) {
   if (!form.title) return '제목을 입력해 주세요.';
   if (form.title.length > 100) return '제목은 100자 이내로 입력해 주세요.';
   if (!form.content) return '내용을 입력해 주세요.';
   if (form.content.length > 20000) return '내용은 20,000자 이내로 입력해 주세요.';
+  if (totalImages > MAX_FILES) return `사진은 게시글당 최대 ${MAX_FILES}장까지 올릴 수 있습니다.`;
+  if (newFiles.length && !form.photoConsent) return '사진을 올리려면 초상권(보호자 동의) 확인란에 체크해 주세요.';
   return null;
+}
+
+function renderForm(req, res, opts) {
+  res.status(opts.error ? 400 : 200).render('board/form', {
+    pageTitle: opts.pageTitle,
+    form: opts.form,
+    error: opts.error || null,
+    action: opts.action,
+    attachments: opts.attachments || [],
+    canPin: canPin(req.user),
+    maxFiles: MAX_FILES,
+  });
+}
+
+function saveAttachments(postId, files) {
+  files.forEach((f) => insertAttachment.run(postId, f.filename, String(f.originalname).slice(0, 200), f.mimetype));
 }
 
 // 목록
@@ -68,7 +91,8 @@ router.get('/boards/:board', loadBoard, (req, res) => {
   const posts = db.prepare(`
     SELECT p.id, p.title, p.visibility, p.pinned, p.views, p.created_at, p.user_id,
            u.nickname AS author, u.role AS author_role,
-           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count
+           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+           (SELECT COUNT(*) FROM attachments a WHERE a.post_id = p.id) AS image_count
     FROM posts p JOIN users u ON u.id = p.user_id
     ${where}
     ORDER BY p.pinned DESC, p.id DESC
@@ -87,28 +111,29 @@ router.get('/boards/:board', loadBoard, (req, res) => {
 
 // 글쓰기
 router.get('/boards/:board/new', loadBoard, requireWrite, (req, res) => {
-  res.render('board/form', {
+  renderForm(req, res, {
     pageTitle: `${req.board.name} 글쓰기`,
     form: { visibility: 'members' },
-    error: null,
     action: `/boards/${req.board.slug}`,
-    canPin: canPin(req.user),
   });
 });
 
-router.post('/boards/:board', loadBoard, requireWrite, (req, res) => {
+router.post('/boards/:board', loadBoard, requireWrite, upload, (req, res) => {
+  const files = req.files || [];
   const form = readForm(req);
-  const error = validate(form);
+  const error = validate(form, files, files.length);
   if (error) {
-    return res.status(400).render('board/form', {
-      pageTitle: `${req.board.name} 글쓰기`, form, error, action: `/boards/${req.board.slug}`, canPin: canPin(req.user),
+    removeFiles(files);
+    return renderForm(req, res, {
+      pageTitle: `${req.board.name} 글쓰기`, form, error, action: `/boards/${req.board.slug}`,
     });
   }
-  const result = db.prepare(`
+  const postId = db.prepare(`
     INSERT INTO posts (board, user_id, title, content, visibility, pinned) VALUES (?, ?, ?, ?, ?, ?)
-  `).run(req.board.slug, req.user.id, form.title, form.content, form.visibility, form.pinned);
+  `).run(req.board.slug, req.user.id, form.title, form.content, form.visibility, form.pinned).lastInsertRowid;
+  saveAttachments(postId, files);
   req.flash('success', '게시글이 등록되었습니다.');
-  res.redirect(`/boards/${req.board.slug}/${result.lastInsertRowid}`);
+  res.redirect(`/boards/${req.board.slug}/${postId}`);
 });
 
 // 상세
@@ -138,6 +163,7 @@ router.get('/boards/:board/:id', loadBoard, loadPost, (req, res, next) => {
   res.render('board/view', {
     pageTitle: post.title,
     post,
+    attachments: getAttachments.all(post.id),
     comments,
     likeCount,
     liked,
@@ -148,21 +174,25 @@ router.get('/boards/:board/:id', loadBoard, loadPost, (req, res, next) => {
 
 // 수정
 router.get('/boards/:board/:id/edit', loadBoard, loadPost, requireManage, (req, res) => {
-  res.render('board/form', {
+  renderForm(req, res, {
     pageTitle: '게시글 수정',
     form: req.post,
-    error: null,
     action: `/boards/${req.board.slug}/${req.post.id}/edit`,
-    canPin: canPin(req.user),
+    attachments: getAttachments.all(req.post.id),
   });
 });
 
-router.post('/boards/:board/:id/edit', loadBoard, loadPost, requireManage, (req, res) => {
+router.post('/boards/:board/:id/edit', loadBoard, loadPost, requireManage, upload, (req, res) => {
+  const files = req.files || [];
   const form = readForm(req);
-  const error = validate(form);
+  const existing = getAttachments.all(req.post.id);
+  const removeIds = new Set([].concat(req.body.removeImages || []).map(Number));
+  const toRemove = existing.filter((a) => removeIds.has(a.id));
+  const error = validate(form, files, existing.length - toRemove.length + files.length);
   if (error) {
-    return res.status(400).render('board/form', {
-      pageTitle: '게시글 수정', form, error, action: `/boards/${req.board.slug}/${req.post.id}/edit`, canPin: canPin(req.user),
+    removeFiles(files);
+    return renderForm(req, res, {
+      pageTitle: '게시글 수정', form, error, action: `/boards/${req.board.slug}/${req.post.id}/edit`, attachments: existing,
     });
   }
   if (!canPin(req.user)) form.pinned = req.post.pinned;
@@ -170,15 +200,38 @@ router.post('/boards/:board/:id/edit', loadBoard, loadPost, requireManage, (req,
     UPDATE posts SET title = ?, content = ?, visibility = ?, pinned = ?, updated_at = datetime('now', 'localtime')
     WHERE id = ?
   `).run(form.title, form.content, form.visibility, form.pinned, req.post.id);
+  toRemove.forEach((a) => db.prepare('DELETE FROM attachments WHERE id = ?').run(a.id));
+  removeFiles(toRemove);
+  saveAttachments(req.post.id, files);
   req.flash('success', '게시글이 수정되었습니다.');
   res.redirect(`/boards/${req.board.slug}/${req.post.id}`);
 });
 
 // 삭제
 router.post('/boards/:board/:id/delete', loadBoard, loadPost, requireManage, (req, res) => {
+  const attachments = getAttachments.all(req.post.id);
   db.prepare('DELETE FROM posts WHERE id = ?').run(req.post.id);
+  removeFiles(attachments);
   req.flash('success', '게시글이 삭제되었습니다.');
   res.redirect(`/boards/${req.board.slug}`);
 });
 
+// 첨부 이미지: 게시글 열람 권한을 확인한 뒤에만 전송 (정적 공개 경로 없음)
+router.get('/files/:id', (req, res, next) => {
+  const file = db.prepare(`
+    SELECT a.*, p.visibility FROM attachments a JOIN posts p ON p.id = a.post_id WHERE a.id = ?
+  `).get(Number(req.params.id));
+  if (!file) return next(httpError(404, '파일을 찾을 수 없습니다.'));
+  if (!canRead(req.user, file)) return next(httpError(403, '회원 전용 사진입니다.'));
+  res.set({
+    'Cache-Control': file.visibility === 'public' ? 'public, max-age=86400' : 'private, no-store',
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+  });
+  res.type(file.mime);
+  res.sendFile(path.join(UPLOAD_DIR, path.basename(file.filename)), (err) => {
+    if (err && !res.headersSent) next(httpError(404, '파일을 찾을 수 없습니다.'));
+  });
+});
+
 module.exports = router;
+module.exports.removeFiles = removeFiles;

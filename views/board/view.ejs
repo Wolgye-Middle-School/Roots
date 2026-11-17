@@ -13,6 +13,13 @@
       <span class="badge <%= post.visibility === 'public' ? 'badge-public' : 'badge-lock' %>"><%= post.visibility === 'public' ? '전체 공개' : '🔒 회원 전용' %></span>
     </div>
   </header>
+  <% if (attachments.length) { %>
+    <div class="gallery">
+      <% attachments.forEach(function (a) { %>
+        <a href="/files/<%= a.id %>" target="_blank" rel="noopener"><img src="/files/<%= a.id %>" alt="<%= a.original_name %>" loading="lazy"></a>
+      <% }) %>
+    </div>
+  <% } %>
   <div class="post-content"><%= post.content %></div>
   <div class="like-box" id="likes">
     <% if (canInteract) { %>

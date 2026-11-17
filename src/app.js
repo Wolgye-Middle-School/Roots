@@ -82,6 +82,8 @@ app.locals.socialProviders = social.socialProviders;
 app.use(social.router);
 app.use(require('./routes/posts'));
 app.use(require('./routes/comments'));
+app.use(require('./routes/account'));
+app.use(require('./routes/admin'));
 
 app.get('/', (req, res) => {
   res.render('index');

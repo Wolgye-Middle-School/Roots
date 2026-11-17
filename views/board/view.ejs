@@ -1,0 +1,29 @@
+<%- include('../partials/header', { pageTitle: post.title }) %>
+<p class="breadcrumb"><a href="/boards/<%= board.slug %>"><%= board.name %></a></p>
+<article class="card post">
+  <header class="post-header">
+    <h1>
+      <% if (post.pinned) { %><span class="badge badge-pin">공지</span><% } %>
+      <%= post.title %>
+    </h1>
+    <div class="post-meta">
+      <span><%= post.author %> <small class="role role-<%= post.author_role %>"><%= roleLabel(post.author_role) %></small></span>
+      <span><%= formatDate(post.created_at, true) %></span>
+      <span>조회 <%= post.views %></span>
+      <span class="badge <%= post.visibility === 'public' ? 'badge-public' : 'badge-lock' %>"><%= post.visibility === 'public' ? '전체 공개' : '🔒 회원 전용' %></span>
+    </div>
+  </header>
+  <div class="post-content"><%= post.content %></div>
+</article>
+
+<div class="post-actions">
+  <a class="btn btn-outline" href="/boards/<%= board.slug %>">목록</a>
+  <% if (canManage) { %>
+    <a class="btn btn-outline" href="/boards/<%= board.slug %>/<%= post.id %>/edit">수정</a>
+    <form method="post" action="/boards/<%= board.slug %>/<%= post.id %>/delete" class="inline-form" onsubmit="return confirm('게시글을 삭제하시겠습니까?');">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-danger" type="submit">삭제</button>
+    </form>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

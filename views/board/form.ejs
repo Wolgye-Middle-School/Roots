@@ -1,0 +1,35 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<p class="breadcrumb"><a href="/boards/<%= board.slug %>"><%= board.name %></a></p>
+<section class="card">
+  <h1><%= pageTitle %></h1>
+  <% if (error) { %><div class="flash flash-error"><%= error %></div><% } %>
+  <form method="post" action="<%= action %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="title">제목</label>
+      <input type="text" id="title" name="title" value="<%= form.title || '' %>" maxlength="100" required>
+    </div>
+    <div class="field">
+      <label for="content">내용</label>
+      <textarea id="content" name="content" maxlength="20000" required><%= form.content || '' %></textarea>
+    </div>
+    <div class="field">
+      <label>공개 범위</label>
+      <div class="radio-group">
+        <label><input type="radio" name="visibility" value="members" <%= form.visibility !== 'public' ? 'checked' : '' %>> 🔒 회원 전용 (승인된 교사·학부모만)</label>
+        <label><input type="radio" name="visibility" value="public" <%= form.visibility === 'public' ? 'checked' : '' %>> 전체 공개</label>
+      </div>
+      <p class="hint">아이의 이름, 학습 현황 등 개인정보가 포함된 글은 반드시 '회원 전용'으로 설정해 주세요.</p>
+    </div>
+    <% if (canPin) { %>
+      <div class="field check">
+        <label><input type="checkbox" name="pinned" value="1" <%= form.pinned ? 'checked' : '' %>> 목록 상단에 고정</label>
+      </div>
+    <% } %>
+    <div class="form-actions">
+      <a class="btn btn-outline" href="/boards/<%= board.slug %>">취소</a>
+      <button type="submit" class="btn">저장</button>
+    </div>
+  </form>
+</section>
+<%- include('../partials/footer') %>

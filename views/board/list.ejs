@@ -1,0 +1,50 @@
+<%- include('../partials/header', { pageTitle: board.name }) %>
+<section class="board-head">
+  <div>
+    <h1><%= board.name %></h1>
+    <p class="muted"><%= board.description %></p>
+  </div>
+  <% if (canWrite) { %><a class="btn" href="/boards/<%= board.slug %>/new">글쓰기</a><% } %>
+</section>
+
+<div class="card table-card">
+  <% if (!posts.length) { %>
+    <p class="empty"><%= q ? '검색 결과가 없습니다.' : '아직 등록된 게시글이 없습니다.' %></p>
+  <% } else { %>
+    <ul class="post-list">
+      <% posts.forEach(function (p) { %>
+        <li class="post-row<%= p.pinned ? ' pinned' : '' %>">
+          <div class="post-main">
+            <% if (p.pinned) { %><span class="badge badge-pin">공지</span><% } %>
+            <% if (p.visibility === 'members') { %><span class="badge badge-lock" title="회원 전용">🔒 회원</span><% } %>
+            <% if (p.readable) { %>
+              <a class="post-title" href="/boards/<%= board.slug %>/<%= p.id %>"><%= p.title %></a>
+            <% } else { %>
+              <span class="post-title locked">회원 전용 게시글입니다</span>
+            <% } %>
+            <% if (p.comment_count) { %><span class="comment-count">[<%= p.comment_count %>]</span><% } %>
+          </div>
+          <div class="post-meta">
+            <span><%= p.author %> <small class="role role-<%= p.author_role %>"><%= roleLabel(p.author_role) %></small></span>
+            <span><%= formatDate(p.created_at) %></span>
+            <span>조회 <%= p.views %></span>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
+
+<% if (totalPages > 1) { %>
+  <nav class="pagination">
+    <% for (var i = 1; i <= totalPages; i++) { %>
+      <a class="<%= i === page ? 'current' : '' %>" href="?page=<%= i %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"><%= i %></a>
+    <% } %>
+  </nav>
+<% } %>
+
+<form class="search-form" method="get" action="/boards/<%= board.slug %>">
+  <input type="text" name="q" value="<%= q %>" placeholder="제목 검색" maxlength="50">
+  <button class="btn btn-outline" type="submit">검색</button>
+</form>
+<%- include('../partials/footer') %>

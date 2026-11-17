@@ -24,6 +24,17 @@ app.disable('x-powered-by');
 
 const ROLE_LABELS = { admin: '관리자', teacher: '교사', parent: '학부모' };
 app.locals.roleLabel = (role) => ROLE_LABELS[role] || role;
+app.locals.boards = require('./boards').BOARDS;
+// 'YYYY-MM-DD HH:MM:SS' → 오늘이면 'HH:MM', 아니면 'YYYY.MM.DD' (full=true면 날짜와 시간 모두)
+app.locals.formatDate = (s, full) => {
+  if (!s) return '';
+  const [date, time = ''] = String(s).split(' ');
+  const hm = time.slice(0, 5);
+  if (full) return `${date.replace(/-/g, '.')} ${hm}`;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return date === today ? hm : date.replace(/-/g, '.');
+};
 // 템플릿 기본값 (요청 처리 중 오류가 나도 레이아웃이 렌더링되도록)
 app.locals.user = null;
 app.locals.flash = null;
@@ -69,6 +80,7 @@ app.use(require('./routes/auth'));
 const social = require('./social');
 app.locals.socialProviders = social.socialProviders;
 app.use(social.router);
+app.use(require('./routes/posts'));
 
 app.get('/', (req, res) => {
   res.render('index');

@@ -35,6 +35,12 @@
     </div>
     <button type="submit" class="btn btn-block">가입하기</button>
   </form>
+  <div class="divider"><span>또는 간편 가입</span></div>
+  <div class="social-buttons">
+    <% socialProviders.forEach(function (p) { %>
+      <a class="social-btn social-<%= p.id %>" href="/auth/<%= p.id %>"><%= p.label %>로 시작하기</a>
+    <% }) %>
+  </div>
   <p class="center muted">이미 계정이 있으신가요? <a href="/login">로그인</a></p>
 </section>
 <%- include('../partials/footer') %>

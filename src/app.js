@@ -66,6 +66,9 @@ app.use(csrfToken);
 app.use(csrfProtect);
 
 app.use(require('./routes/auth'));
+const social = require('./social');
+app.locals.socialProviders = social.socialProviders;
+app.use(social.router);
 
 app.get('/', (req, res) => {
   res.render('index');

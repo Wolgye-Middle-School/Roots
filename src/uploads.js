@@ -5,7 +5,7 @@ const multer = require('multer');
 const { httpError } = require('./middleware/auth');
 const { checkCsrf, csrfError } = require('./middleware/common');
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
+const { UPLOAD_DIR } = require('./storage');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const MAX_FILES = 5;

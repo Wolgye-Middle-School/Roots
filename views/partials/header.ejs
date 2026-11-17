@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= typeof pageTitle !== 'undefined' ? pageTitle + ' · ' : '' %>느티나무 게시판</title>
-  <link rel="stylesheet" href="/public/css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <header class="site-header">
@@ -32,6 +32,9 @@
   </div>
 </header>
 <main class="container">
+<% if (ephemeralStorage && user && user.role === 'admin') { %>
+  <div class="flash flash-error">임시 저장소에서 실행 중입니다. 서버가 재시작되면 게시글·회원·사진이 초기화됩니다. 영구 저장소(DB) 연결이 필요합니다.</div>
+<% } %>
 <% if (flash) { %>
   <div class="flash flash-<%= flash.type %>"><%= flash.message %></div>
 <% } %>

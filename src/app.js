@@ -35,6 +35,10 @@ app.locals.formatDate = (s, full) => {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   return date === today ? hm : date.replace(/-/g, '.');
 };
+app.locals.ephemeralStorage = require('./storage').EPHEMERAL;
+if (app.locals.ephemeralStorage) {
+  console.warn('[경고] 서버리스 환경에서 /tmp에 데이터를 저장합니다. 인스턴스가 재시작되면 게시글·회원·사진이 초기화됩니다.');
+}
 // 템플릿 기본값 (요청 처리 중 오류가 나도 레이아웃이 렌더링되도록)
 app.locals.user = null;
 app.locals.flash = null;
@@ -51,7 +55,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
-app.use('/public', express.static(path.join(__dirname, '..', 'public')));
+// Vercel은 public/ 폴더를 CDN에서 루트 경로로 제공하므로 로컬도 동일하게 맞춘다
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use(session({
   name: 'roots.sid',
@@ -99,6 +104,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`느티나무 게시판이 ${BASE_URL} 에서 실행 중입니다.`);
-});
+// Vercel은 export한 app을 서버리스 함수로 실행하고, 로컬에서는 직접 서버를 띄운다
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`느티나무 게시판이 ${BASE_URL} 에서 실행 중입니다.`);
+  });
+}
+
+module.exports = app;

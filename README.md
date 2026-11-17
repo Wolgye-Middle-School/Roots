@@ -69,7 +69,8 @@ npm start              # http://localhost:3000
 데이터베이스(`data/roots.db`), 로그인 세션, 업로드한 사진(`uploads/`)이 **서버 디스크에 저장**됩니다.
 
 - Render, Railway, Fly.io 등 **영구 디스크(volume)** 를 붙일 수 있는 곳에 배포하세요. 경로는 `DATA_DIR`, `UPLOAD_DIR` 환경변수로 바꿀 수 있습니다.
-- Vercel 같은 서버리스 환경은 파일이 유지되지 않으므로 그대로는 사용할 수 없습니다. (외부 DB·파일 저장소로 전환 필요)
+- Vercel(Express 프리셋)에서도 실행되지만, 서버리스 환경에서는 `/tmp`에 저장되어 **인스턴스가 재시작되면 데이터와 로그인이 초기화**됩니다. 시연용으로만 사용하고, 실제 운영은 외부 DB·파일 저장소로 전환하거나 영구 디스크가 있는 곳에 배포하세요. (관리자 화면에 경고 표시)
+- Vercel 환경변수에 `SESSION_SECRET`, `BASE_URL`(예: `https://roots-xxx.vercel.app`)을 반드시 설정하세요.
 - HTTPS 주소를 `BASE_URL`에 설정하면 세션 쿠키에 `Secure`가 적용됩니다.
 
 ## 보안
